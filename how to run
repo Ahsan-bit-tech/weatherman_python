@@ -1,0 +1,4 @@
+the code will run on terminal using commandline like:
+python weatherman.py -c 2002/06 C:\filepath
+python weatherman.py -a 2002/06 C:\filepath
+python weatherman.py -e 2002/06 C:\filepath
