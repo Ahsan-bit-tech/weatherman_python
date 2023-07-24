@@ -1,31 +1,35 @@
 from datetime import datetime
-import calendar
-from colorama import Fore  # for coloring the graph
 import argparse
+import calendar
+import csv
+from colorama import Fore
 
-
-moth_number = 1
-max_humid, min_temp, date_list, max_temp = [], [], [], []  # assigne 4 empty lists
-parser = argparse.ArgumentParser(description="output of the dataset")
-parser.add_argument('passing_date',help="date of the file",type=str)
-parser.add_argument('passing_path',help="path of the file",type=str)
-parser.add_argument('-e','--comparison',action="store_true",help="For comparison ")
-parser.add_argument('-a','--average',action="store_true",help="For calculating average")
-parser.add_argument('-c','--Two_bar_graphs',help="For ploting graph",action="store_true")
-parser.add_argument('-C','--One_bar_graphs',help="For ploting graph",action="store_true")
+max_humid, min_temp, date_list, max_temp = [], [], [], []
+parser = argparse.ArgumentParser(description="Check data from the dataset")
+parser.add_argument('passing_date', help="pass the date as string ", type=str)
+parser.add_argument('passing_path', help="path of the file", type=str)
+parser.add_argument('-e', '--comparison', action="store_true", help="For comparison ")
+parser.add_argument('-a', '--average',action="store_true", help="For calculating average")
+parser.add_argument('-c', '--Two_bar_graphs', help="For ploting graph", action="store_true")
+parser.add_argument('-b', '--One_bar_graphs', help="For ploting graph", action="store_true")
 argparse = parser.parse_args()
 year_num = argparse.passing_date
-
 
 if len(year_num) > 4:
     date_month_lst = year_num.split('/')  # to take arguments value from the commandline and slipt the argumets
     year_num = int(date_month_lst[0])
-    moth_number = int(date_month_lst[1])  # starting of the month as jan
+    if date_month_lst[1] !='':
+        month_number = int(date_month_lst[1])  # starting of the month as jan
+elif len(year_num) == 4:
+    date_month_lst = year_num
+else:
+    print("Invalid year")
 
 
 def calculate_average(lst):  # function to calculate the average of required list
     total = sum(lst)
-    return total // len(lst)
+    round_ =round(total / len(lst),2)
+    return round_
 
 
 def print_date_month(lst, temp):  # to print the name of the month with the date
@@ -35,49 +39,48 @@ def print_date_month(lst, temp):  # to print the name of the month with the date
     return temp
 
 
-def join_file_format(moth_value):  # to change the string into file name like file-->>>file.txt according to the date
-    month_format = calendar.month_abbr[moth_value]
+def join_file_format(month_value):  # to change the string into file name like file-->>>file.txt according to the date
+    month_format = calendar.month_abbr[month_value]
     if argparse.passing_path != '':
-        directory_read(argparse.passing_path + "\lahore_weather_" + str(year_num) + '_' + month_format + '.txt')
+        directory_read(argparse.passing_path+"\lahore_weather_" + str(year_num) + '_' + month_format + '.csv')
     else:
         print("File path is not defined")
 
 
 def directory_read(direct):
-    # this function helps to read the data from required file.txt  and append the data in the lists
-    global max_humid, min_temp, max_temp, maximum_temp, minimum_temperatur, maximun_humid
+    global max_humid, min_temp, max_temp
     with open(direct, 'r') as file:
+        csvreader = csv.reader(file)
         line_space = file.readline()
-        line_space = file.readline()
-        for line in file:
-            words = line.split(',')
-            if len(words) > 2:
-                if words[1] != '':
-                    max_temp.append(int(words[1]))
-                if words[3] != '':
-                    min_temp.append(int(words[3]))
-                if words[7] != '':
-                    max_humid.append(int(words[7]))
-                date_list.append(str(words[0]))
+        for line in csvreader:
+            if line[1] != '':
+                max_temp.append(float(line[1]))
+            if line[3] != '':
+                min_temp.append(float(line[3]))
+            if line[7] != '':
+                max_humid.append(float(line[7]))
+            date_list.append(str(line[0]))
+
     file.close()
     return
 
 
-# -----------------
 if argparse.comparison:  # passing the flags to give output depending on the commandline
-    year_num = int(year_num)
-    while moth_number < 13:
-        join_file_format(moth_number)
-        moth_number += 1
-    print("Highest:", max(max_temp), "C on", print_date_month(max_temp, max(max_temp)))
-    print("Lowest:", min(min_temp), "C on", print_date_month(min_temp, min(min_temp)))
-    print("Higest:", max(max_humid), "% on", print_date_month(max_humid, max(max_humid)))
+    if len(year_num) == 4:
+        month_number = 1
+        while month_number < 13:
+            join_file_format(month_number)
+            month_number += 1
+    else:
+        year_num = int(year_num)
+        join_file_format(month_number)
+    print("Highest Temperature:", max(max_temp), "C on", print_date_month(max_temp, max(max_temp)))
+    print("Lowest Temperature:", min(min_temp), "C on", print_date_month(min_temp, min(min_temp)))
+    print("Higest Humid:", max(max_humid), "% on", print_date_month(max_humid, max(max_humid)))
 
 elif argparse.average:  # passing the flags to give output depending on the commandline
     if len(date_month_lst) == 2:
-
-        join_file_format(moth_number)
-        # change_list_into_int()
+        join_file_format(month_number)
         print("Highest Average:", calculate_average(max_temp), "C")
         print("lowest Average:", calculate_average(min_temp), "C")
         print("Average Humidity:", calculate_average(max_humid), "%")
@@ -139,7 +142,6 @@ elif argparse.One_bar_graphs:
     if len(date_month_lst) >= 2:
         moth_number = int(date_month_lst[1])
         join_file_format(moth_number)
-        # change_list_into_int()
         print(calendar.month_name[moth_number], year_num)
         for i in range(len(date_list)):
             j = 0
@@ -168,8 +170,5 @@ elif argparse.One_bar_graphs:
                     print("------no data-----")
     else:
         print("invalid entry ;Enter the month number")
-
 else:
     print("Invalid input")
-
-
