@@ -2,18 +2,6 @@ from datetime import datetime
 import argparse
 import calendar
 from colorama import Fore
-max_humid, min_temp, max_temp = 0, 100, 0
-date_of_max_temp = date_of_min_temp = date_of_max_humid = ''
-avg_max_temp = avg_max_humid = avg_min_temp = 0
-
-parser = argparse.ArgumentParser(description="Check data from the dataset")
-parser.add_argument('passing_date', help="pass the date as string ", type=str)
-parser.add_argument('passing_path', help="path of the file", type=str)
-parser.add_argument('-e', '--comparison', action="store_true", help="For comparison ")
-parser.add_argument('-a', '--average', action="store_true", help="For calculating average")
-parser.add_argument('-c', '--Two_bar_graphs', help="For plotting graph", action="store_true")
-parser.add_argument('-b', '--One_bar_graphs', help="For plotting graph", action="store_true")
-argparse = parser.parse_args()
 
 
 def split_month_year():
@@ -39,22 +27,21 @@ def join_file_format(month_value):  # to change the string into file name like f
     Month_Name = calendar.month_abbr[month_value]
     if argparse.passing_path != '':
         if len(split_month_year()) == 4:
-            directory_read(
-                argparse.passing_path + "\lahore_weather_" + split_month_year() + '_' + Month_Name + '.txt')
+            return argparse.passing_path + "\lahore_weather_" + split_month_year() + '_' + Month_Name + '.txt'
         else:
             date_lst = split_month_year()
-            directory_read(
-                argparse.passing_path + "\lahore_weather_" + date_lst[0] + '_' + Month_Name + '.txt')
+            return argparse.passing_path + "\lahore_weather_" + date_lst[0] + '_' + Month_Name + '.txt'
     else:
         print("File path is not defined")
+        quit()
 
 
-def directory_read(file_name):
-    global max_humid, min_temp, max_temp, date_of_max_humid, date_of_max_temp, date_of_min_temp, avg_min_temp, avg_max_humid, avg_max_temp
+def directory_read(file_name, min_temp = None, max_temp= None, max_humid=None, date_of_max_humid= None, date_of_max_temp= None, date_of_min_temp= None):
     sum_max_temp = sum_min_temp = sum_max_humid = 0
     counter_max_temp = counter_min_temp = counter_max_humid = 0
     with open(file_name, 'r') as File:
-        next(File)  # skip the line
+        if File.readline() == '':
+            next(File)  # skip the line
         next(File)  # skip the line
         for Line in File:
             file_argument = Line.split(',')
@@ -84,92 +71,99 @@ def directory_read(file_name):
                             date_of_min_temp = file_argument[0]
                             min_temp = int(file_argument[3])
     File.close()
+
     if argparse.average:
         avg_max_temp = round(sum_max_temp / counter_max_temp, 2)
         avg_max_humid = round(sum_max_humid / counter_max_humid, 2)
         avg_min_temp = round(sum_min_temp / counter_min_temp, 2)
-    return
-
-
-if argparse.comparison:  # passing the flags to give output depending on the commandline
-    if len(split_month_year()) == 4:
-        month_number = 1
-        while month_number < 13:
-            join_file_format(month_number)
-            month_number += 1
-    else:
-        print(f"Invalid year input {split_month_year()}")
-        quit()
-    print("Highest temperature:", max_temp, "C on", print_date_month(date_of_max_temp))
-    print("Lowest temperature: ", min_temp, "C on", print_date_month(date_of_min_temp))
-    print("Highest humid:", max_humid, "% on", print_date_month(date_of_max_humid))
-
-elif argparse.average:  # passing the flags to give output depending on the commandline
-    if len(split_month_year()) == 2:
-        lst = split_month_year()
-        join_file_format(int(lst[1]))
         print("Highest Average:", avg_max_temp, "C")
         print("lowest Average:", avg_min_temp, "C")
         print("Average Humidity:", avg_max_humid, "%")
-    else:
-        print(f"The date format {split_month_year()} is not correct")
+    elif argparse.comparison:
+        return max_temp,min_temp,max_humid , date_of_max_temp,date_of_min_temp,date_of_max_humid
 
-elif argparse.Two_bar_graphs:  # passing the flags to give output depending on the commandline
-    month_lst = split_month_year()
-    month_number = int(month_lst[1])
-    print(calendar.month_name[month_number], year_num)
-    month_format = calendar.month_abbr[month_number]
-    if argparse.passing_path != '':
-        File_name = argparse.passing_path + "\lahore_weather_" + month_lst[0] + '_' + month_format + '.txt'
-        with open(File_name, 'r') as file:
-            next(file)  # skip the line
-            next(file)  # skip the line
-            for Line_of_File in file:
-                words = Line_of_File.split(',')
-                if len(words) > 2:
-                    date_of_max_temp = datetime.strptime(words[0], '%Y-%m-%d')
-                    temp3 = int(date_of_max_temp.strftime('%d'))
-                    print(temp3, end='')
-                    max_temp = int(words[1])
-                    min_temp = int(words[3])
-                    i = 1
-                    while i <= max_temp:
-                        print(Fore.RED + '+', end="")
-                        i += 1
-                    print(Fore.RESET, i, "C")
-                    print(temp3, end='')
-                    i = 1
-                    while i <= max_temp:
-                        print(Fore.BLUE + '+', end="")
-                        i += 1
-                    print(Fore.RESET, i, "C")
-        file.close()
 
-elif argparse.One_bar_graphs:  # passing the flags to give output depending on the commandline
-    month_lst = split_month_year()
-    month_number = int(month_lst[1])
-    print(calendar.month_name[month_number], year_num)
-    month_format = calendar.month_abbr[month_number]
-    if argparse.passing_path != '':
-        File_name = argparse.passing_path + "\lahore_weather_" + month_lst[0] + '_' + month_format + '.txt'
-        with open(File_name, 'r') as file:
-            next(file)  # skip the line
-            next(file)  # skip the line
-            for line in file:
-                words = line.split(',')
-                if len(words) > 2:
-                    date_of_max_temp = datetime.strptime(words[0], '%Y-%m-%d')
-                    temp3 = int(date_of_max_temp.strftime('%d'))
-                    print(temp3, end='')
-                    max_temp = int(words[1])
-                    min_temp = int(words[3])
-                    i = 1
-                    while i <= max_temp:
-                        print(Fore.RED + '+', end="")
-                        i += 1
-                    i = 1
-                    while i <= min_temp:
-                        print(Fore.BLUE + '+', end="")
-                        i += 1
-                    print(Fore.RESET, max_temp, "C - ", min_temp, "c")
-        file.close()
+def main():
+    max_humid, min_temp, max_temp = 0, 100, 0
+    date_of_max_temp = date_of_min_temp = date_of_max_humid = ''
+    if argparse.comparison:  # passing the flags to give output depending on the commandline
+        if len(split_month_year()) == 4:
+            month_number = 1
+            while month_number < 13:
+                a = join_file_format(month_number)
+                max_temp ,min_temp,max_humid,date_of_max_temp,date_of_min_temp,date_of_max_humid = directory_read(a,min_temp,max_temp,max_humid,date_of_max_humid,date_of_max_temp,date_of_min_temp)
+                month_number += 1
+        else:
+            print(f"Invalid year input {split_month_year()}")
+            quit()
+        print("Highest temperature:", max_temp, "C on", print_date_month(date_of_max_temp))
+        print("Lowest temperature: ", min_temp, "C on", print_date_month(date_of_min_temp))
+        print("Highest humid:", max_humid, "% on", print_date_month(date_of_max_humid))
+
+    elif argparse.average:  # passing the flags to give output depending on the commandline
+        if len(split_month_year()) == 2:
+            lst = split_month_year()
+            file = join_file_format(int(lst[1]))
+            directory_read(file)
+        else:
+            print(f"The date format {split_month_year()} is not correct")
+
+    elif argparse.Two_bar_graphs or argparse.One_bar_graphs:  # passing the flags to give output depending on the commandline
+        month_lst = split_month_year()
+        month_number = int(month_lst[1])
+        print(calendar.month_name[month_number], month_lst[0])
+        month_format = calendar.month_abbr[month_number]
+        if argparse.passing_path != '':
+            File_name = argparse.passing_path + "\lahore_weather_" + month_lst[0] + '_' + month_format + '.txt'
+            with open(File_name, 'r') as file:
+                if file.readline() == '':
+                    next(file)  # skip the line
+                next(file)  # skip the line
+                for Line_of_File in file:
+                    File_arguments = Line_of_File.split(',')
+                    if len(File_arguments) > 2:
+                        if argparse.Two_bar_graphs:
+                            date_of_max_temp = datetime.strptime(File_arguments[0], '%Y-%m-%d')
+                            print_dates = int(date_of_max_temp.strftime('%d'))
+                            print(print_dates, end='')
+                            max_temp = int(File_arguments[1])
+                            min_temp = int(File_arguments[3])
+                            graph_index = 1
+                            while graph_index <= max_temp:
+                                print(Fore.RED + '+', end="")
+                                graph_index += 1
+                            print(Fore.RESET, graph_index, "C")
+                            print(print_dates, end='')
+                            graph_index = 1
+                            while graph_index <= max_temp:
+                                print(Fore.BLUE + '+', end="")
+                                graph_index += 1
+                            print(Fore.RESET, graph_index, "C")
+                        elif argparse.One_bar_graphs:
+                            date_of_max_temp = datetime.strptime(File_arguments[0], '%Y-%m-%d')
+                            print_dates = int(date_of_max_temp.strftime('%d'))
+                            print(print_dates, end='')
+                            max_temp = int(File_arguments[1])
+                            min_temp = int(File_arguments[3])
+                            graph_index = 1
+                            while graph_index <= max_temp:
+                                print(Fore.RED + '+', end="")
+                                graph_index += 1
+                            graph_index = 1
+                            while graph_index <= min_temp:
+                                print(Fore.BLUE + '+', end="")
+                                graph_index += 1
+                            print(Fore.RESET, max_temp, "C - ", min_temp, "c")
+            file.close()
+
+
+if __name__=="__main__":
+    parser = argparse.ArgumentParser(description="Check data from the dataset")
+    parser.add_argument('passing_date', help="pass the date as string ", type=str)
+    parser.add_argument('passing_path', help="path of the file", type=str)
+    parser.add_argument('-e', '--comparison', action="store_true", help="For comparison ")
+    parser.add_argument('-a', '--average', action="store_true", help="For calculating average")
+    parser.add_argument('-c', '--Two_bar_graphs', help="For plotting graph", action="store_true")
+    parser.add_argument('-b', '--One_bar_graphs', help="For plotting graph", action="store_true")
+    argparse = parser.parse_args()
+    main()
