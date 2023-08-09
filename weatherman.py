@@ -3,32 +3,28 @@ import argparse
 import calendar
 from colorama import Fore
 import csv
-import os
-
 
 class ReadFile:
     def __init__(self, year_number, file_path):
         self.year_number = year_number
         self.passing_path = file_path
-        self.max_humid = 0
-        self.min_temp = 100
-        self.max_temp = 0
-        self.date_of_max_temp = ''
-        self.date_of_min_temp = ''
-        self.date_of_max_humid = ''
+        self.max_parameter3 = 0
+        self.min_parameter2 = 100
+        self.max_parameter1 = 0
+        self.date_of_parameter1 = ''
+        self.date_of_parameter2 = ''
+        self.date_of_parameter3 = ''
 
     def year_format(self):
         if len(self.year_number) != 4:
-            print(f"This format is wrong {self.year_number}")
-            quit()
+            raise TypeError(f"the type {self.year_number} is wrong . the digits should be 0000 format")
         return self.year_number
 
     def year_n_month_format(self):
         date_month_lst = self.year_number.split('/')
         month = int(date_month_lst[1])
         if month >= 13:
-            print(f"This format is wrong {self.year_number}")
-            quit()
+            raise TypeError(f"the type {self.year_number} is wrong")
         return date_month_lst
 
     def pass_month_in_file_name(self, month_number):
@@ -54,53 +50,51 @@ class ReadFile:
         except ValueError:
             return False
 
-    def compare_minmax_n_average(self, read_file_in_Dict, temp, pass_flag_argument):
-        if self.date_format_validity(temp) and read_file_in_Dict['Max TemperatureC'] != '' and read_file_in_Dict['Max Humidity'] != '' and read_file_in_Dict['Min TemperatureC'] != '':
-            if pass_flag_argument.average:
-                self.sum_max_temp += int(read_file_in_Dict['Max TemperatureC'])
-                self.counter_max_temp += 1
-                self.sum_max_humid += int(read_file_in_Dict['Max Humidity'])
-                self.counter_max_humid += 1
-                self.sum_min_temp += int(read_file_in_Dict['Min TemperatureC'])
-                self.counter_min_temp += 1
-                self.avg_min_temp = self.sum_min_temp / self.counter_min_temp
-                self.avg_max_temp = self.sum_max_temp / self.counter_max_temp
-                self.avg_max_humid = self.sum_max_humid / self.counter_max_humid
-            elif pass_flag_argument.compare_min_max:
-                if self.max_temp < int(read_file_in_Dict['Max TemperatureC']):
-                    self.date_of_max_temp = temp
-                    self.max_temp = int(read_file_in_Dict['Max TemperatureC'])
-                if self.max_humid < int(read_file_in_Dict['Max Humidity']):
-                    self.date_of_max_humid = temp
-                    self.max_humid = int(read_file_in_Dict['Max Humidity'])
-                if self.min_temp >= int(read_file_in_Dict['Min TemperatureC']):
-                    self.date_of_min_temp = temp
-                    self.min_temp = int(read_file_in_Dict['Min TemperatureC'])
+    def compare_minmax(self, date_parameter, parameter1, parameter2, parameter3):
+        if self.date_format_validity(date_parameter) and parameter1 != '' and parameter3 != '' and parameter2 != '':
+            if self.max_parameter1 < int(parameter1):
+                self.date_of_parameter1 = date_parameter
+                self.max_parameter1 = int(parameter1)
+            if self.max_parameter3 < int(parameter3):
+                self.date_of_parameter3 = date_parameter
+                self.max_parameter3 = int(parameter3)
+            if self.min_parameter2 >= int(parameter2):
+                self.date_of_parameter2 = date_parameter
+                self.min_parameter2 = int(parameter2)
+
+    def compare_average(self, date_paramter, parameter1, parameter2, parameter3):
+        if self.date_format_validity(date_paramter) and parameter1 != '' and parameter3 != '' and parameter2 != '':
+            self.sum_parameter1 += int(parameter1)
+            self.count_parameter1 += 1
+            self.sum_parameter2 += int(parameter2)
+            self.count_parameter2 += 1
+            self.sum_parameter3 += int(parameter3)
+            self.count_parameter3 += 1
+            self.avg_parameter1 = self.sum_parameter1 / self.count_parameter1
+            self.avg_parameter2 = self.sum_parameter2 / self.count_parameter2
+            self.avg_parameter3 = self.sum_parameter3 / self.count_parameter3
 
     def directory_read(self, file_name):
-        pass_flag_argument = add_flag_argument_()
-        with open(file_name, 'r') as in_file:
-            stripped = (line.strip() for line in in_file)
-            lines = (line.split(",") for line in stripped if line)
-            file_name = file_name.split('.')
-            file_name[1] = "csv"
-            file_name = '.'.join(file_name)
-            with open(file_name, 'w') as out_file:
-                writer = csv.writer(out_file)
-                writer.writerows(lines)
-            with open(file_name, 'r') as out_file:
-                csvreader = csv.DictReader(out_file)
-                for read_file_in_Dict in csvreader:
-                    if "PKT" in read_file_in_Dict:
-                        self.compare_minmax_n_average(read_file_in_Dict, read_file_in_Dict["PKT"], pass_flag_argument)
-                    elif "PKST" in read_file_in_Dict:
-                        self.compare_minmax_n_average(read_file_in_Dict, read_file_in_Dict["PKST"], pass_flag_argument)
-            out_file.close()
-        os.remove(file_name)
-        in_file.close()
+        pass_flag_argument = add_flag_argument()
+        with open(file_name, 'r') as csvfile:
+            if csvfile.readline() == '':
+                next(csvfile)
+            csvreader = csv.DictReader(csvfile)
+            for read_file_in_Dict in csvreader:
+                if "PKT" in read_file_in_Dict:
+                    if pass_flag_argument.compare_min_max:
+                        self.compare_minmax(read_file_in_Dict["PKT"], read_file_in_Dict["Max TemperatureC"], read_file_in_Dict["Min TemperatureC"], read_file_in_Dict["Max Humidity"])
+                    elif pass_flag_argument.average:
+                        self.compare_average(read_file_in_Dict["PKT"],read_file_in_Dict["Max TemperatureC"],read_file_in_Dict["Min TemperatureC"],read_file_in_Dict["Max Humidity"])
+                elif "PKST" in read_file_in_Dict:
+                    if pass_flag_argument.compare_min_max:
+                        self.compare_minmax(read_file_in_Dict["PKST"], read_file_in_Dict["Max TemperatureC"], read_file_in_Dict["Min TemperatureC"], read_file_in_Dict["Max Humidity"])
+                    elif pass_flag_argument.average:
+                        self.compare_average(read_file_in_Dict["PKST"],read_file_in_Dict["Max TemperatureC"],read_file_in_Dict["Min TemperatureC"],read_file_in_Dict["Max Humidity"])
+        csvfile.close()
 
 
-def add_flag_argument_():
+def add_flag_argument():
     parser = argparse.ArgumentParser(description="Check data from the dataset")
     parser.add_argument('passing_date', help="pass the date as string ", type=str)
     parser.add_argument('passing_path', help="path of the file", type=str)
@@ -118,41 +112,38 @@ class MinMax(ReadFile):
         super().__init__(year_number, file_path)
         self.year_number = year_number
         self.file_path = file_path
-        self.sum_max_temp = 0
-        self.sum_min_temp = 0
-        self.sum_max_humid = 0
-        self.counter_max_temp = 0
-        self.counter_min_temp = 0
-        self.counter_max_humid = 0
-        self.avg_max_temp = 0
-        self.avg_min_temp = 0
-        self.avg_max_humid = 0
+        self.sum_parameter1 = 0
+        self.sum_parameter2 = 0
+        self.sum_parameter3 = 0
+        self.count_parameter1 = 0
+        self.count_parameter2 = 0
+        self.count_parameter3 = 0
+        self.avg_parameter1 = 0
+        self.avg_parameter2 = 0
+        self.avg_parameter3 = 0
 
     @staticmethod
-    def print_date_month(temp):  # to print the name of the month with the date
-        date_format = datetime.strptime(temp, '%Y-%m-%d')
-        temp = date_format.strftime('%B %d')
-        return temp
+    def print_date_month(date_format):  # to print the name of the month with the date
+        date_format = datetime.strptime(date_format, '%Y-%m-%d')
+        date_format = date_format.strftime('%B %d')
+        return date_format
 
-    def compare_min_max(self):
-        if len(MinMax.year_format(self)) != 4:
-            print(f"Invalid year input {MinMax.year_format(self.year_number)}")
-            quit()
+    def generate_min_max(self):
         month_number = 1
         while month_number < 13:
             file_name = MinMax.pass_month_in_file_name(self, month_number)
             MinMax.directory_read(self, file_name)
             month_number += 1
-        print("Highest temperature:", self.max_temp, "C on", self.print_date_month(self.date_of_max_temp))
-        print("Lowest temperature: ", self.min_temp, "C on", self.print_date_month(self.date_of_min_temp))
-        print("Highest humid:", self.max_humid, "% on", self.print_date_month(self.date_of_max_humid))
+        print("Highest temperature:", self.max_parameter1, "C on", self.print_date_month(self.date_of_parameter1))
+        print("Lowest temperature: ", self.min_parameter2, "C on", self.print_date_month(self.date_of_parameter2))
+        print("Highest humid:", self.max_parameter3, "% on", self.print_date_month(self.date_of_parameter3))
 
     def calculate_average(self):
         file_name = self.constant_file_name()
         self.directory_read(file_name)
-        print("Highest Average:", round(self.avg_max_temp, 2), "C")
-        print("lowest Average:", round(self.avg_min_temp, 2), "C")
-        print("Average Humidity:", round(self.avg_max_humid, 2), "%")
+        print("Highest Average:", round(self.avg_parameter1, 2), "C")
+        print("lowest Average:", round(self.avg_parameter2, 2), "C")
+        print("Average Humidity:", round(self.avg_parameter3, 2), "%")
 
 
 class BarGraph:
@@ -172,6 +163,7 @@ class BarGraph:
 
     @staticmethod
     def print_red_lines(limit):
+        limit = int(limit)
         graph_index = 1
         while graph_index <= limit:
             print(Fore.RED + '+', end="")
@@ -179,76 +171,64 @@ class BarGraph:
 
     @staticmethod
     def print_blue_lines(limit):
+        limit = int(limit)
         graph_index = 1
         while graph_index <= limit:
             print(Fore.BLUE + '+', end="")
             graph_index += 1
 
-    def print_date_n_graph(self, temp, max_temp=None, min_temp=None):
-        flag_argument = add_flag_argument_()
-        date_of_max_temp = datetime.strptime(temp, '%Y-%m-%d')
-        print_dates = int(date_of_max_temp.strftime('%d'))
+    def print_date_n_graph(self, date_format, parameter1, parameter2):
+        flag_argument = add_flag_argument()
+        date_parameter = datetime.strptime(date_format, '%Y-%m-%d')
+        print_dates = int(date_parameter.strftime('%d'))
         print(print_dates, end='')
-        if max_temp != None and min_temp != None:
-            if flag_argument.Two_bar_graphs:
-                self.print_red_lines(max_temp)
-                print(Fore.RESET, max_temp, "C")
+        if flag_argument.Two_bar_graphs:
+            if parameter1 != '' and parameter2 != '':
+                self.print_red_lines(parameter1)
+                print(Fore.RESET, parameter1, "C")
                 print(print_dates, end='')
-                self.print_blue_lines(min_temp)
-                print(Fore.RESET, min_temp, "C")
-            elif flag_argument.One_bar_graphs:
-                self.print_red_lines(max_temp)
-                self.print_blue_lines(min_temp)
-                print(Fore.RESET, max_temp, "C - ", min_temp, "c")
+                self.print_blue_lines(parameter2)
+                print(Fore.RESET, parameter2, "C")
+            else:
+                print("-->no data")
+                print(print_dates, end='')
+                print("-->no data")
+        elif flag_argument.One_bar_graphs:
+            if parameter1 != '' and parameter2 != '':
+                self.print_red_lines(parameter1)
+                self.print_blue_lines(parameter2)
+                print(Fore.RESET, parameter1, "C - ", parameter2, "c")
+            else:
+                print("-->no data")
+
 
     def generate_bar_graph(self):
         file_name = self.generate_file_name()
-        with open(file_name, 'r') as in_file:
-            stripped = (line.strip() for line in in_file)
-            lines = (line.split(",") for line in stripped if line)
-            file_name = file_name.split('.')
-            file_name[1] = "csv"
-            file_name = '.'.join(file_name)
-            with open(file_name, 'w') as out_file:
-                writer = csv.writer(out_file)
-                writer.writerows(lines)
-            with open(file_name, 'r') as out_file:
-                csvreader = csv.DictReader(out_file)
-                for read_file_in_Dict in csvreader:
-                    if "PKT" in read_file_in_Dict:
-                        if ReadFile.date_format_validity(read_file_in_Dict["PKT"]) and read_file_in_Dict['Max TemperatureC'] != '' and read_file_in_Dict['Min TemperatureC'] != '':
-                            self.print_date_n_graph(read_file_in_Dict["PKT"],
-                                                    int(read_file_in_Dict['Max TemperatureC']),
-                                                    int(read_file_in_Dict['Min TemperatureC']))
-                        elif ReadFile.date_format_validity(read_file_in_Dict["PKT"]):
-                            self.print_date_n_graph(read_file_in_Dict["PKT"])
-                            print("-->no data")
-                    elif "PKST" in read_file_in_Dict:
-                        if ReadFile.date_format_validity(read_file_in_Dict["PKST"]) and read_file_in_Dict['Max TemperatureC'] != '' and read_file_in_Dict['Min TemperatureC'] != '':
-                            self.print_date_n_graph(read_file_in_Dict["PKST"],
-                                                    int(read_file_in_Dict['Max TemperatureC']),
-                                                    int(read_file_in_Dict['Min TemperatureC']))
-                        elif ReadFile.date_format_validity(read_file_in_Dict["PKST"]):
-                            self.print_date_n_graph(read_file_in_Dict["PKST"])
-                            print("-->no data")
-            out_file.close()
-        os.remove(file_name)
-        in_file.close()
+        with open(file_name, 'r') as csvfile:
+            if csvfile.readline() == '':
+                next(csvfile)
+            csvreader = csv.DictReader(csvfile)
+            for read_file_in_Dict in csvreader:
+                if "PKT" in read_file_in_Dict and ReadFile.date_format_validity(read_file_in_Dict["PKT"]):
+                    self.print_date_n_graph(read_file_in_Dict["PKT"],read_file_in_Dict['Max TemperatureC'],read_file_in_Dict['Min TemperatureC'])
+                elif "PKST" in read_file_in_Dict and ReadFile.date_format_validity(read_file_in_Dict["PKST"]) :
+                    self.print_date_n_graph(read_file_in_Dict["PKST"],read_file_in_Dict['Max TemperatureC'],read_file_in_Dict['Min TemperatureC'])
+
 
 
 def main():
-    argument_parser = add_flag_argument_()
+    pass_argument = add_flag_argument()
 
-    if argument_parser.compare_min_max:  # passing the flags to give output depending on the commandline
-        class_object = MinMax(argument_parser.passing_date, argument_parser.passing_path)
-        class_object.compare_min_max()
+    if pass_argument.compare_min_max:  # passing the flags to give output depending on the commandline
+        class_object = MinMax(pass_argument.passing_date, pass_argument.passing_path)
+        class_object.generate_min_max()
 
-    elif argument_parser.average:  # passing the flags to give output depending on the commandline
-        class_object = MinMax(argument_parser.passing_date, argument_parser.passing_path)
+    elif pass_argument.average:  # passing the flags to give output depending on the commandline
+        class_object = MinMax(pass_argument.passing_date, pass_argument.passing_path)
         class_object.calculate_average()
 
-    elif argument_parser.Two_bar_graphs or argument_parser.One_bar_graphs:
-        class_object = BarGraph(argument_parser.passing_date, argument_parser.passing_path)
+    elif pass_argument.Two_bar_graphs or pass_argument.One_bar_graphs:
+        class_object = BarGraph(pass_argument.passing_date, pass_argument.passing_path)
         class_object.generate_bar_graph()
 
 
